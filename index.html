@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test de Ventilación Mecánica e Intubación - Parte 2</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #020617; /* Slate 950 */
+            color: #f1f5f9;
+        }
+
+        .glass-card {
+            background: rgba(15, 23, 42, 0.8); /* Slate 900 */
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .option-btn {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            background: rgba(30, 41, 59, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .option-btn:hover:not(:disabled) {
+            background-color: rgba(51, 65, 85, 0.8);
+            border-color: rgba(59, 130, 246, 0.5);
+            transform: translateY(-2px);
+        }
+
+        .correct {
+            background-color: #064e3b !important;
+            border-color: #10b981 !important;
+            color: #d1fae5 !important;
+        }
+
+        .incorrect {
+            background-color: #450a0a !important;
+            border-color: #ef4444 !important;
+            color: #fee2e2 !important;
+        }
+
+        #next-btn {
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <div id="app" class="w-full max-w-2xl">
+        <!-- Pantalla del Test -->
+        <div id="quiz-screen">
+            <!-- Cabecera de Stats -->
+            <div class="flex justify-between items-end mb-8 px-2">
+                <div class="flex gap-4">
+                    <div class="glass-card px-5 py-3 rounded-2xl border-green-500/20 text-center min-w-[110px]">
+                        <span class="text-[10px] uppercase tracking-widest text-slate-500 font-bold block mb-1">Aciertos</span>
+                        <span id="score-correct" class="text-2xl font-bold text-green-400">0</span>
+                    </div>
+                    <div class="glass-card px-5 py-3 rounded-2xl border-red-500/20 text-center min-w-[110px]">
+                        <span class="text-[10px] uppercase tracking-widest text-slate-500 font-bold block mb-1">Errores</span>
+                        <span id="score-incorrect" class="text-2xl font-bold text-red-400">0</span>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <span id="question-index" class="text-xs font-bold text-purple-400 uppercase tracking-tighter bg-purple-500/10 px-3 py-1.5 rounded-lg border border-purple-500/20">
+                        Cargando...
+                    </span>
+                </div>
+            </div>
+
+            <!-- Pregunta -->
+            <div class="glass-card p-8 md:p-10 rounded-3xl mb-8 relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-500 to-indigo-600"></div>
+                
+                <h2 id="question-text" class="text-xl md:text-2xl font-medium mb-10 text-slate-100 leading-snug">
+                    Cargando pregunta...
+                </h2>
+                
+                <div id="options-container" class="grid gap-3">
+                    <!-- Opciones dinámicas -->
+                </div>
+            </div>
+            
+            <div class="flex justify-center">
+                <button id="next-btn" onclick="quiz.next()" class="hidden bg-purple-600 hover:bg-purple-500 text-white px-10 py-4 rounded-2xl font-bold transition-all transform active:scale-95">
+                    Siguiente Pregunta
+                </button>
+            </div>
+        </div>
+
+        <!-- Pantalla Final -->
+        <div id="result-screen" class="hidden glass-card p-12 rounded-3xl text-center">
+            <div class="w-20 h-20 bg-purple-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            </div>
+            <h2 class="text-3xl font-bold mb-2 text-white">¡Test Finalizado!</h2>
+            <p class="text-slate-400 mb-10">Has completado el segundo bloque de preguntas (26-50).</p>
+            
+            <div class="grid grid-cols-2 gap-6 mb-12">
+                <div class="p-6 bg-slate-900/50 rounded-2xl border border-green-500/20">
+                    <p class="text-green-500 text-xs font-bold uppercase mb-2">Aciertos</p>
+                    <p id="final-correct" class="text-5xl font-bold text-green-400">0</p>
+                </div>
+                <div class="p-6 bg-slate-900/50 rounded-2xl border border-red-500/20">
+                    <p class="text-red-500 text-xs font-bold uppercase mb-2">Errores</p>
+                    <p id="final-incorrect" class="text-5xl font-bold text-red-400">0</p>
+                </div>
+            </div>
+            
+            <button onclick="location.reload()" class="w-full bg-slate-800 hover:bg-slate-700 text-white px-8 py-4 rounded-2xl font-bold transition-all border border-slate-700">
+                Reiniciar Bloque
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const questions = [
+            { q: "26. ¿Cómo hay que poner la cama en la extubación endotraqueal?", a: ["Cama a 45°", "Cama a 50°", "Cama a 40°", "Cama a 35°"], c: 0 },
+            { q: "27. ¿Qué hay que registrar en la extubación endotraqueal?", a: ["Saturación, FR, FC", "Saturación, FR y TA", "FR, FC y TA", "Saturación, FR, FC y TA"], c: 3 },
+            { q: "28. ¿Cómo puede ser la sonda de flujo?", a: ["Creciente, decreciente o en meseta", "Creciente, decreciente o en insuflación", "Creciente, decreciente o en deflación", "Creciente y decreciente"], c: 0 },
+            { q: "29. ¿Cuáles son las complicaciones de la ventilación no mecánica invasiva?", a: ["Escaras en los pies", "Disminución del trabajo respiratorio por fugas", "No mejora la hipoxemia", "Mejora el trabajo respiratorio"], c: 1 },
+            { q: "30. ¿En qué sitio se realiza la traqueotomía percutánea?", a: ["2-3° espacio cartílago traqueal superior", "1-2° espacio cartílago traqueal superior", "3-4° espacio cartílago traqueal superior", "2-3° espacio cartílago traqueal inferior"], c: 0 },
+            { q: "31. ¿Qué es el destete?", a: ["Proceso de la retirada de la VM", "Proceso de la retirada del CO2", "Proceso de la retirada del O2", "Colocación de la VM"], c: 0 },
+            { q: "32. ¿Cuál es una complicación de la VM?", a: ["Atelectasias y Barotrauma", "Disminución de la presión intraalveolar", "Incremento del gasto cardiaco, arritmias", "Hipertensión"], c: 0 },
+            { q: "33. ¿En qué servicio se realiza la traqueotomía percutánea?", a: ["Cama de traumatología", "Cama de UCI", "Cama de quirófano", "Cama del paciente"], c: 1 },
+            { q: "34. ¿Qué tres situaciones comprende el fallo del destete?", a: ["Fracaso desconexión (intolerancia); Reintubación < 24h; VM prolongada > 30 días", "Fracaso desconexión (intolerancia); Reintubación < 48h; VM prolongada > 30 días", "Fracaso desconexión (intolerancia); Reintubación < 48h; VM prolongada > 15 días", "Fracaso desconexión (intolerancia); Reintubación < 24h; VM prolongada > 15 días"], c: 1 },
+            { q: "35. ¿Cómo es el ciclado de los respiradores volumétricos?", a: ["Ciclados por volumen", "Ciclado por tiempo", "Ciclados por presión", "Ciclado por espacio"], c: 0 },
+            { q: "36. ¿Cuál no es una indicación de la traqueotomía percutánea?", a: ["VM prolongada (< 20 días)", "Dificultad para la eliminación de secreciones", "Intubaciones dificultosas por vía oral o nasal", "Destete ineficaz"], c: 0 },
+            { q: "37. ¿Cuál es el orden de las fases del ciclo de un respirador?", a: ["Insuflación, meseta y espiración", "Meseta, insuflación y espiración", "Insuflación y espiración", "Insuflación y meseta"], c: 0 },
+            { q: "38. ¿Cuál es una indicación de la traqueostomía percutánea?", a: ["VM prolongada (< 20 días)", "Facilidad para la eliminación de secreciones", "Intubaciones por vía oral o nasal", "Destete ineficaz"], c: 3 },
+            { q: "39. ¿Cuándo se mantiene la válvula espiratoria cerrada?", a: ["En el tiempo de pausa inspiratoria", "En el tiempo de pausa meseta", "En el tiempo de pausa espiratorio", "No se mantiene cerrada"], c: 0 },
+            { q: "40. ¿Cuánta aportación de FiO2 proporciona la mascarilla venturi?", a: ["20-80% se pone 6-8 L/min", "50-80% se pone 6-8 L/min", "30-80% se pone 6-8 L/min", "40-80% se pone 6-8 L/min"], c: 2 },
+            { q: "41. ¿De cuánto es la FR en niños pequeños?", a: ["Hasta 20 rpm", "Hasta 10 rpm", "Hasta 30 rpm", "Hasta 40 rpm"], c: 2 },
+            { q: "42. ¿En qué fase hay una pausa de inspiración?", a: ["Insuflación", "Meseta", "Espiración", "Ninguna"], c: 1 },
+            { q: "43. ¿Para qué sirven las pinzas Magill?", a: ["Para aguantar la lengua", "Para extracción de cuerpos extraños y orientar el tubo", "Para sujetar al paciente", "No tiene función"], c: 1 },
+            { q: "44. ¿De cuánto es la FR en un adulto?", a: ["13-15", "12-15", "10-15", "10-20"], c: 1 },
+            { q: "45. ¿Cómo tiene que estar la cama en la intubación endotraqueal?", a: ["35° o 40°", "35° o 45°", "35° o 50°", "30° o 40°"], c: 1 },
+            { q: "46. ¿Cuánta aportación de FiO2 proporciona las gafas nasales?", a: ["11-30% con un máximo de 4L/min", "21-30% con un máximo de 4L/min", "15-30% con un máximo de 4L/min", "20-30% con un máximo de 4L/min"], c: 1 },
+            { q: "47. ¿Qué valores tiene el flujo espiratorio?", a: ["40-50 lpm", "40-65 lpm", "40-60 lpm", "40-70 lpm"], c: 2 },
+            { q: "48. ¿Cuál corresponde al respirador volumétrico?", a: ["Pulmón variable dependiente; Presión variable dependiente de la resistencia", "Pulmón variable independiente; Presión variable independiente de la resistencia", "Pulmón variable dependiente; Presión variable independiente de la resistencia", "Pulmón variable independiente; Presión variable dependiente de la resistencia"], c: 3 },
+            { q: "49. ¿Para qué sirve el Guedel?", a: ["Sirve para aguantar la lengua", "Extracción de cuerpos extraños", "Sujetar al paciente", "No tiene función"], c: 0 },
+            { q: "50. ¿Cómo son las palas Macintosh?", a: ["Rectas", "Curvas", "En zigzag", "No tiene forma"], c: 1 }
+        ];
+
+        class Quiz {
+            constructor() {
+                this.currentIdx = 0;
+                this.correct = 0;
+                this.incorrect = 0;
+                this.answered = false;
+            }
+
+            init() {
+                this.renderQuestion();
+            }
+
+            renderQuestion() {
+                this.answered = false;
+                const q = questions[this.currentIdx];
+                document.getElementById('question-index').innerText = `Pregunta ${this.currentIdx + 26} de 50`;
+                document.getElementById('question-text').innerText = q.q;
+                document.getElementById('next-btn').classList.add('hidden');
+                
+                const container = document.getElementById('options-container');
+                container.innerHTML = '';
+
+                q.a.forEach((option, idx) => {
+                    const btn = document.createElement('button');
+                    btn.className = 'option-btn w-full text-left p-5 rounded-2xl font-medium text-slate-300';
+                    btn.innerText = option;
+                    btn.onclick = () => this.checkAnswer(idx, btn);
+                    container.appendChild(btn);
+                });
+            }
+
+            checkAnswer(idx, btn) {
+                if (this.answered) return;
+                this.answered = true;
+                
+                const correctIdx = questions[this.currentIdx].c;
+                const buttons = document.querySelectorAll('.option-btn');
+                
+                if (idx === correctIdx) {
+                    this.correct++;
+                    btn.classList.add('correct');
+                    document.getElementById('score-correct').innerText = this.correct;
+                } else {
+                    this.incorrect++;
+                    btn.classList.add('incorrect');
+                    buttons[correctIdx].classList.add('correct');
+                    document.getElementById('score-incorrect').innerText = this.incorrect;
+                }
+
+                buttons.forEach(b => b.disabled = true);
+                document.getElementById('next-btn').classList.remove('hidden');
+            }
+
+            next() {
+                this.currentIdx++;
+                if (this.currentIdx < questions.length) {
+                    this.renderQuestion();
+                } else {
+                    this.finish();
+                }
+            }
+
+            finish() {
+                document.getElementById('quiz-screen').classList.add('hidden');
+                document.getElementById('result-screen').classList.remove('hidden');
+                document.getElementById('final-correct').innerText = this.correct;
+                document.getElementById('final-incorrect').innerText = this.incorrect;
+            }
+        }
+
+        const quiz = new Quiz();
+        window.onload = () => quiz.init();
+    </script>
+</body>
+</html>
